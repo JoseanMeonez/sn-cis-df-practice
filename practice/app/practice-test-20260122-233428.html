@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CIS-DF Practice Exam - 20260122-233428</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; line-height: 1.6; }
+        .container { display: flex; min-height: 100vh; }
+        .sidebar { width: 280px; background: #1a1a2e; color: white; padding: 20px; position: fixed; height: 100vh; overflow-y: auto; }
+        .sidebar h2 { color: #00d4aa; margin-bottom: 10px; font-size: 1.1rem; }
+        .timer { background: #16213e; padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 20px; }
+        .timer-display { font-size: 2rem; font-weight: bold; color: #00d4aa; }
+        .timer-warning { color: #ff6b6b !important; }
+        .progress-info { background: #16213e; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+        .progress-bar { height: 8px; background: #333; border-radius: 4px; overflow: hidden; margin-top: 10px; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #00d4aa, #00a896); transition: width 0.3s; }
+        .nav-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-bottom: 20px; }
+        .nav-btn { width: 100%; aspect-ratio: 1; border: none; border-radius: 4px; cursor: pointer; font-size: 0.75rem; font-weight: 600; background: #16213e; color: #888; transition: all 0.2s; }
+        .nav-btn:hover { background: #00d4aa; color: #1a1a2e; }
+        .nav-btn.current { background: #00d4aa; color: #1a1a2e; }
+        .nav-btn.answered { background: #2d5a27; color: white; }
+        .nav-btn.flagged { background: #ff6b6b; color: white; }
+        .legend { font-size: 0.8rem; margin-top: 15px; }
+        .legend-item { display: flex; align-items: center; margin: 5px 0; }
+        .legend-box { width: 16px; height: 16px; border-radius: 3px; margin-right: 8px; }
+        .main-content { flex: 1; margin-left: 280px; padding: 30px; max-width: 900px; }
+        .question-card { background: white; border-radius: 12px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); display: none; }
+        .question-card.active { display: block; }
+        .question-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #eee; }
+        .question-number { font-size: 1.2rem; font-weight: 600; color: #1a1a2e; }
+        .domain-badge { padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
+        .domain-configuration { background: #e3f2fd; color: #1565c0; }
+        .domain-ingest { background: #fff3e0; color: #e65100; }
+        .domain-govern { background: #e8f5e9; color: #2e7d32; }
+        .domain-insight { background: #f3e5f5; color: #7b1fa2; }
+        .domain-csdm { background: #fce4ec; color: #c2185b; }
+        .question-text { font-size: 1.1rem; margin-bottom: 25px; color: #333; }
+        .options { display: flex; flex-direction: column; gap: 12px; }
+        .option { display: flex; align-items: flex-start; padding: 15px; border: 2px solid #e0e0e0; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
+        .option:hover { border-color: #00d4aa; background: #f8fffe; }
+        .option.selected { border-color: #00d4aa; background: #e8f8f5; }
+        .option input { margin-right: 12px; margin-top: 3px; accent-color: #00d4aa; }
+        .option-label { font-weight: 600; margin-right: 8px; color: #1a1a2e; }
+        .multi-select-note { background: #fff3cd; padding: 10px 15px; border-radius: 6px; margin-bottom: 15px; font-size: 0.9rem; color: #856404; }
+        .question-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 30px; padding-top: 20px; border-top: 2px solid #eee; }
+        .flag-btn { display: flex; align-items: center; gap: 8px; padding: 10px 20px; border: 2px solid #ff6b6b; background: white; color: #ff6b6b; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+        .flag-btn:hover, .flag-btn.flagged { background: #ff6b6b; color: white; }
+        .nav-buttons { display: flex; gap: 10px; }
+        .nav-button { padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+        .nav-button.prev { background: #e0e0e0; color: #333; }
+        .nav-button.next { background: #00d4aa; color: white; }
+        .nav-button.submit { background: #1a1a2e; color: white; }
+        .nav-button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        .nav-button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .results-page { display: none; background: white; border-radius: 12px; padding: 40px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .results-page.active { display: block; }
+        .results-header { text-align: center; margin-bottom: 40px; }
+        .results-header h1 { font-size: 2rem; color: #1a1a2e; margin-bottom: 10px; }
+        .score-circle { width: 180px; height: 180px; border-radius: 50%; margin: 30px auto; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 3rem; font-weight: bold; }
+        .score-pass { background: linear-gradient(135deg, #00d4aa, #00a896); color: white; }
+        .score-fail { background: linear-gradient(135deg, #ff6b6b, #ee5a5a); color: white; }
+        .score-label { font-size: 1rem; font-weight: normal; }
+        .domain-breakdown { margin: 30px 0; }
+        .domain-breakdown h3 { margin-bottom: 20px; color: #1a1a2e; }
+        .domain-row { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #eee; }
+        .domain-name { width: 150px; font-weight: 600; }
+        .domain-bar-container { flex: 1; height: 24px; background: #eee; border-radius: 12px; overflow: hidden; margin: 0 20px; }
+        .domain-bar { height: 100%; border-radius: 12px; transition: width 0.5s; }
+        .domain-score { width: 80px; text-align: right; font-weight: 600; }
+        .results-actions { display: flex; justify-content: center; gap: 20px; margin-top: 40px; }
+        .results-btn { padding: 15px 30px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.2s; }
+        .results-btn.primary { background: #00d4aa; color: white; }
+        .results-btn.secondary { background: #1a1a2e; color: white; }
+        .results-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        .review-section { margin-top: 40px; padding-top: 30px; border-top: 2px solid #eee; }
+        .review-question { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #ccc; }
+        .review-question.correct { border-left-color: #00d4aa; }
+        .review-question.incorrect { border-left-color: #ff6b6b; }
+        .review-q-header { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .review-status { font-weight: 600; padding: 3px 10px; border-radius: 4px; font-size: 0.85rem; }
+        .review-status.correct { background: #e8f8f5; color: #00a896; }
+        .review-status.incorrect { background: #ffeaea; color: #ff6b6b; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000; }
+        .modal.active { display: flex; }
+        .modal-content { background: white; padding: 30px; border-radius: 12px; max-width: 500px; text-align: center; }
+        .modal-content h2 { margin-bottom: 20px; color: #1a1a2e; }
+        .modal-content p { margin-bottom: 20px; color: #666; }
+        .modal-buttons { display: flex; gap: 15px; justify-content: center; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <h2>CIS-DF Practice Exam</h2>
+            <div class="timer">
+                <div>Time Remaining</div>
+                <div class="timer-display" id="timer">90:00</div>
+            </div>
+            <div class="progress-info">
+                <div>Progress: <span id="answered-count">0</span>/75 answered</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+                </div>
+            </div>
+            <h2>Question Navigator</h2>
+            <div class="nav-grid" id="nav-grid"></div>
+            <div class="legend">
+                <div class="legend-item"><div class="legend-box" style="background: #16213e;"></div><span>Not answered</span></div>
+                <div class="legend-item"><div class="legend-box" style="background: #2d5a27;"></div><span>Answered</span></div>
+                <div class="legend-item"><div class="legend-box" style="background: #ff6b6b;"></div><span>Flagged</span></div>
+                <div class="legend-item"><div class="legend-box" style="background: #00d4aa;"></div><span>Current</span></div>
+            </div>
+        </aside>
+        <main class="main-content">
+            <div id="questions-container"></div>
+            <div class="results-page" id="results-page">
+                <div class="results-header">
+                    <h1>Exam Complete</h1>
+                    <p>ServiceNow CIS-DF Practice Exam Results</p>
+                    <div class="score-circle" id="score-circle">
+                        <span id="score-percent">0%</span>
+                        <span class="score-label">Score</span>
+                    </div>
+                    <p id="pass-fail-message"></p>
+                </div>
+                <div class="domain-breakdown">
+                    <h3>Performance by Domain</h3>
+                    <div id="domain-results"></div>
+                </div>
+                <div class="results-actions">
+                    <button class="results-btn secondary" onclick="downloadReport()">Download Report</button>
+                    <button class="results-btn primary" onclick="reviewAnswers()">Review Answers</button>
+                </div>
+                <div class="review-section" id="review-section" style="display: none;">
+                    <h3>Answer Review</h3>
+                    <div id="review-content"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <div class="modal" id="submit-modal">
+        <div class="modal-content">
+            <h2>Submit Exam?</h2>
+            <p id="submit-message">Are you sure you want to submit?</p>
+            <div class="modal-buttons">
+                <button class="results-btn secondary" onclick="closeModal()">Cancel</button>
+                <button class="results-btn primary" onclick="submitExam()">Submit</button>
+            </div>
+        </div>
+    </div>
+    <div class="modal" id="time-up-modal">
+        <div class="modal-content">
+            <h2>Time's Up!</h2>
+            <p>Your exam has been automatically submitted.</p>
+            <div class="modal-buttons">
+                <button class="results-btn primary" onclick="closeTimeModal()">View Results</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+const questions = [
+// CONFIGURATION (11)
+{id:1,domain:"Configuration",type:"single",question:"What is the primary purpose of the CI Class Manager in ServiceNow CMDB?",options:["To create new user accounts","To manage CI class hierarchy, attributes, and identification rules","To run Discovery scans","To generate financial reports"],correct:[1],explanation:"CI Class Manager is the central location to manage CI classes, configure class attributes, hierarchy, and set up identification rules."},
+{id:2,domain:"Configuration",type:"single",question:"Which component prevents duplicate CIs in the CMDB when data is ingested from multiple sources?",options:["Service Mapping","Identification and Reconciliation Engine (IRE)","CMDB Health Dashboard","Discovery Scheduler"],correct:[1],explanation:"IRE uses identification rules to uniquely identify CIs and prevent duplicates."},
+{id:3,domain:"Configuration",type:"single",question:"In CMDB 360 multisource configuration, what determines which data source's value takes precedence?",options:["The timestamp of the last update","Reconciliation rules and data source priority","The alphabetical order of source names","The size of the data payload"],correct:[1],explanation:"Reconciliation rules and IRE data source rules determine authorization and update priority between discovery sources."},
+{id:4,domain:"Configuration",type:"single",question:"What happens when a new table is created in the CMDB hierarchy without explicit identification rules?",options:["The table cannot store any CIs","An error is thrown","It inherits rules from its parent table","Default rules are automatically generated"],correct:[2],explanation:"When a new table is created in the CMDB, it derives identification and reconciliation rules from its parent table."},
+{id:5,domain:"Configuration",type:"single",question:"Which API tests if IRE will perform insert or update operations WITHOUT committing changes?",options:["createOrUpdateCI()","identifyCI()","CMDBTransformUtil()","reconcileCI()"],correct:[1],explanation:"identifyCI() API does not commit results to the database, allowing you to test IRE behavior."},
+{id:6,domain:"Configuration",type:"single",question:"What is an identification rule in CMDB IRE?",options:["A rule defining discovery frequency","A rule that uniquely identifies CIs based on attributes","A rule for backup schedules","A rule for user permissions"],correct:[1],explanation:"Identification rules uniquely identify CIs based on attributes to determine if a CI already exists."},
+{id:7,domain:"Configuration",type:"multi",question:"Which TWO statements are true about IRE reconciliation? (Choose two)",options:["Reconciliation is required for both insert and update operations","Reconciliation is required only for update operations","Reconciliation allows only authoritative sources to write to CMDB","Reconciliation stages data before committing"],correct:[1,2],explanation:"Reconciliation is required only for updates and allows only designated authoritative sources to write to CMDB."},
+{id:8,domain:"Configuration",type:"single",question:"What is the purpose of reclassification tasks in IRE?",options:["To delete obsolete CIs","To handle CIs that couldn't be automatically reclassified","To assign CIs to support groups","To merge duplicate CIs"],correct:[1],explanation:"Reclassification tasks are created for CIs that couldn't be automatically reclassified during identification."},
+{id:9,domain:"Configuration",type:"single",question:"Which plugin allows scoped apps to access identification engine APIs?",options:["com.snc.cmdb.health","com.snc.cmdb.scoped","com.snc.service-mapping","com.snc.discovery"],correct:[1],explanation:"Configuration Management For Scoped Apps (com.snc.cmdb.scoped) allows scoped apps to access IRE APIs."},
+{id:10,domain:"Configuration",type:"single",question:"What is the function of the Identification Simulator?",options:["To test network connectivity","To construct and simulate IRE payload processing before execution","To predict CI growth","To generate test data"],correct:[1],explanation:"Identification simulation constructs a validated payload and simulates IRE processing before actual execution."},
+{id:11,domain:"Configuration",type:"single",question:"Which enhanced IRE API provides partial payload and deduplication features?",options:["createOrUpdateCI()","identifyCI()","createOrUpdateCIEnhanced()","CMDBTransformUtil()"],correct:[2],explanation:"createOrUpdateCIEnhanced() provides enhanced IRE features including partial payload and deduplication."},
+// INGEST (14)
+{id:12,domain:"Ingest",type:"single",question:"What is the primary purpose of Service Graph Connectors?",options:["To create visual diagrams","To import and integrate third-party data into CMDB","To monitor network traffic","To manage authentication"],correct:[1],explanation:"Service Graph Connectors import and integrate third-party data into CMDB from various sources."},
+{id:13,domain:"Ingest",type:"multi",question:"Which TWO are categories of Service Graph Connectors? (Choose two)",options:["Public cloud providers (AWS, GCP, Azure)","Endpoint/IT asset management (Intune, SCCM)","Email server connectors","Social media integrations"],correct:[0,1],explanation:"Service Graph Connectors include Public cloud providers and Endpoint/IT asset management categories."},
+{id:14,domain:"Ingest",type:"single",question:"What API applies IRE processes when using Import Sets?",options:["Directly insert records","CMDBTransformUtil API","Manual CI creation","Export functionality"],correct:[1],explanation:"CMDBTransformUtil is the API for applying IRE to Import Sets."},
+{id:15,domain:"Ingest",type:"single",question:"Which connector imports Microsoft endpoint management data?",options:["Service Graph Connector for AWS","Service Graph Connector for Microsoft Intune","Service Graph Connector for Splunk","Service Graph Connector for Datadog"],correct:[1],explanation:"Service Graph Connector for Microsoft Intune imports endpoint management data."},
+{id:16,domain:"Ingest",type:"single",question:"What happens when CI identification fails to find a matching CI?",options:["Data is rejected","A new CI record is created","Data is queued for review","Processing stops with error"],correct:[1],explanation:"When IRE doesn't find a match, it creates a new CI record."},
+{id:17,domain:"Ingest",type:"single",question:"Which category includes AppDynamics, Datadog, and Dynatrace connectors?",options:["Public cloud providers","Endpoint management","Monitoring and observability applications","Security solutions"],correct:[2],explanation:"Monitoring and observability applications category includes AppDynamics, Datadog, Dynatrace, etc."},
+{id:18,domain:"Ingest",type:"single",question:"What is the purpose of de-duplication tasks?",options:["To automatically merge all duplicates","To group duplicate CIs for review and remediation","To delete duplicates immediately","To prevent future duplicates"],correct:[1],explanation:"De-duplication tasks group duplicate CIs for review rather than auto-merging."},
+{id:19,domain:"Ingest",type:"multi",question:"Which TWO data sources use IRE APIs? (Choose two)",options:["ServiceNow Discovery","Import Sets","Excel spreadsheets directly","Paper forms"],correct:[0,1],explanation:"Discovery and Import Sets use IRE APIs for CI identification and reconciliation."},
+{id:20,domain:"Ingest",type:"single",question:"Which connector ingests vulnerability scanning data?",options:["Service Graph Connector for AWS","Service Graph Connector for Qualys","Service Graph Connector for Jamf","Service Graph Connector for OpenTelemetry"],correct:[1],explanation:"Service Graph Connector for Qualys is used for security and vulnerability data."},
+{id:21,domain:"Ingest",type:"single",question:"What is technical debt in CMDB data management?",options:["License costs","Accumulated data quality issues needing remediation","Hardware depreciation","Training expenses"],correct:[1],explanation:"Technical debt refers to accumulated data quality issues that need remediation."},
+{id:22,domain:"Ingest",type:"single",question:"How are Asset State and CI Hardware Status related?",options:["Never synchronized","Automatically synchronized","Manual sync only","Requires separate plugin"],correct:[1],explanation:"Asset State and CI Hardware Status are kept automatically synchronized."},
+{id:23,domain:"Ingest",type:"single",question:"Which connector imports data from SCCM?",options:["Manual entry only","Service Graph Connector for Microsoft SCCM","Email integration","FTP transfer"],correct:[1],explanation:"Service Graph Connector for Microsoft SCCM imports from on-premises SCCM."},
+{id:24,domain:"Ingest",type:"single",question:"How are relationships handled during data ingestion?",options:["Must be created manually","IRE can automatically create relationships","Not supported","Require separate import"],correct:[1],explanation:"IRE can automatically create relationships based on payload data."},
+{id:25,domain:"Ingest",type:"single",question:"Which category includes Microsoft Defender, Netskope, and SentinelOne?",options:["Public cloud providers","Monitoring and observability","Security solutions","Endpoint management"],correct:[2],explanation:"Security solutions category includes Defender, Netskope, SentinelOne, etc."},
+// GOVERN (26)
+{id:26,domain:"Govern",type:"single",question:"Which are the three main KPIs in CMDB Health?",options:["Correctness, Compliance, Completeness","Staleness, Duplicate, Orphan","Required, Recommended, Audit","Service, Class, Health Group"],correct:[0],explanation:"CMDB Health has three main KPIs: Correctness, Compliance, and Completeness."},
+{id:27,domain:"Govern",type:"multi",question:"Which THREE metrics are part of the Correctness KPI? (Choose three)",options:["Orphan","Staleness","Duplicate","Audit"],correct:[0,1,2],explanation:"Correctness KPI includes Orphan, Staleness, and Duplicate metrics."},
+{id:28,domain:"Govern",type:"single",question:"What is the default staleness Effective Duration?",options:["30 days","60 days","90 days","180 days"],correct:[1],explanation:"The default staleness rule sets Effective Duration to 60 days."},
+{id:29,domain:"Govern",type:"single",question:"What makes a CI 'stale' in CMDB Health?",options:["No relationships","Not updated within Effective Duration","Empty required fields","Failed audit"],correct:[1],explanation:"A CI is stale if not updated within the staleness rule's Effective Duration."},
+{id:30,domain:"Govern",type:"single",question:"Which metric measures unpopulated mandatory fields?",options:["Correctness - Orphan","Completeness - Required","Compliance - Audit","Correctness - Staleness"],correct:[1],explanation:"Completeness - Required metric measures CIs with unpopulated mandatory fields."},
+{id:31,domain:"Govern",type:"single",question:"What must be activated for Compliance KPI to show results?",options:["Discovery","Service Mapping","Audit","Event Management"],correct:[2],explanation:"Audit must be activated for Compliance KPI results."},
+{id:32,domain:"Govern",type:"multi",question:"Which TWO are relationship health metrics? (Choose two)",options:["Duplicate relationships","Orphan relationships","Required relationships","Audit relationships"],correct:[0,1],explanation:"Relationship health includes Duplicate and Orphan relationships."},
+{id:33,domain:"Govern",type:"single",question:"What is an orphan relationship?",options:["Too many child CIs","Missing parent CI, child CI, or both","Manually created","Older than 60 days"],correct:[1],explanation:"An orphan relationship is missing either a parent CI, child CI, or both."},
+{id:34,domain:"Govern",type:"single",question:"Which field stores CI operational state?",options:["status","install_status","operational_status","lifecycle_stage"],correct:[2],explanation:"The operational_status field stores the CI's operational state."},
+{id:35,domain:"Govern",type:"single",question:"When Operational Status is set to 'Retired', what happens to Hardware Status?",options:["Unchanged","Automatically set to 'Retired'","Set to 'Operational'","Must be manually updated"],correct:[1],explanation:"Hardware Status is automatically set to Retired when Operational Status is Retired."},
+{id:36,domain:"Govern",type:"single",question:"When Hardware Status changes from Retired to another status, Operational Status becomes?",options:["Remains Retired","Automatically set to Non-Operational","Set to Operational","Change is blocked"],correct:[1],explanation:"Operational Status is automatically set to Non-Operational."},
+{id:37,domain:"Govern",type:"single",question:"What is the purpose of CMDB remediation rules?",options:["Auto-delete failed CIs","Execute remediation workflows for failed health tests","Backup data","Create CI classes"],correct:[1],explanation:"Remediation rules execute workflows for CIs that failed health tests."},
+{id:38,domain:"Govern",type:"single",question:"Which Dashboard view shows service health reports?",options:["Class View","Service View","Health Group View","Metric View"],correct:[1],explanation:"Service View shows service health reports with CI details per service."},
+{id:39,domain:"Govern",type:"single",question:"What is restricted for CIs with Retired operational status by default?",options:["Cannot be deleted","CreateTask action is not allowed","Cannot have relationships","Auto-archived"],correct:[1],explanation:"The CreateTask action is not allowed for CIs with Retired status."},
+{id:40,domain:"Govern",type:"single",question:"How is duplicate count calculated in CMDB Health?",options:["Total CIs in set","Total CIs minus one","Half of total","Number of sources"],correct:[1],explanation:"Duplicate count is total CIs in the set minus one."},
+{id:41,domain:"Govern",type:"single",question:"Why set priority for operational states?",options:["Display order in lists","Calculate cumulative state when multiple operators set different states","State transition order","Backup priority"],correct:[1],explanation:"Priority determines cumulative state when multiple states are set."},
+{id:42,domain:"Govern",type:"single",question:"Which job must be enabled for CMDB health data gathering?",options:["Discovery Scheduler","CMDB Health Dashboard jobs","Service Mapping Scheduler","Import Set Scheduler"],correct:[1],explanation:"CMDB Health Dashboard jobs must be enabled to gather health data."},
+{id:43,domain:"Govern",type:"single",question:"What makes a CI an 'orphan'?",options:["No name","Satisfies orphan rule criteria or missing data in table hierarchy","Created manually","Too many relationships"],correct:[1],explanation:"Orphan CIs satisfy orphan rule criteria or have missing data in their table hierarchy."},
+{id:44,domain:"Govern",type:"single",question:"What is CMDB Data Manager's purpose?",options:["Manage user access","Comprehensive CI lifecycle operations in bulk","Generate documentation","Configure discovery"],correct:[1],explanation:"CMDB Data Manager manages CI lifecycle operations like deletion and archival in bulk."},
+{id:45,domain:"Govern",type:"single",question:"What is the Recommended metric under Completeness KPI?",options:["CIs following best practices","CIs where recommended fields are not populated","CIs for deletion","CIs for upgrade"],correct:[1],explanation:"Recommended metric measures CIs with unpopulated recommended fields."},
+{id:46,domain:"Govern",type:"single",question:"What is a stale relationship?",options:["Created 30+ days ago","Relationship where a stale CI is parent or child","No type defined","Pending approval"],correct:[1],explanation:"A stale relationship has a stale CI as parent or child."},
+{id:47,domain:"Govern",type:"single",question:"Default maximum lease expiration for CI Actions?",options:["7 days","15 days","30 days","60 days"],correct:[1],explanation:"Default max_lease_expired_days is 15."},
+{id:48,domain:"Govern",type:"multi",question:"Which TWO views are on CMDB Health Dashboard? (Choose two)",options:["Class View","Health Group View","Network View","Discovery View"],correct:[0,1],explanation:"CMDB Health Dashboard has Class View, Service View, and Health Group View."},
+{id:49,domain:"Govern",type:"single",question:"Which job calculates compliant CI details for Data Foundations Dashboard?",options:["Discovery Scheduler","CMDB Get Well Metric Collection","Service Mapping Scheduler","IRE Processing Job"],correct:[1],explanation:"CMDB Get Well Metric Collection calculates and stores compliant CI details."},
+{id:50,domain:"Govern",type:"single",question:"What does 'Hardware CIs with Serial Numbers' metric check?",options:["Serial number uniqueness","Percentage of Computer/Network Gear CIs with vs without serial numbers","Manufacturer record match","Serial number format"],correct:[1],explanation:"It checks percentage of Computer or Network Gear CIs with serial numbers."},
+{id:51,domain:"Govern",type:"single",question:"What is a Compatible CI Action?",options:["Works with all CI types","Two actions that can be applied simultaneously to a CI","Doesn't require approval","Recommended by ServiceNow"],correct:[1],explanation:"Compatible CI Actions defines pairs of actions that can be applied simultaneously."},
+// INSIGHT (15)
+{id:52,domain:"Insight",type:"single",question:"What is Natural Language Query (NLQ) in CMDB?",options:["A programming language","Using everyday language to build CMDB queries","A reporting template","A validation tool"],correct:[1],explanation:"NLQ allows using everyday language to build CMDB queries."},
+{id:53,domain:"Insight",type:"single",question:"What is CMDB Query Builder used for?",options:["Creating UIs","Building complex queries spanning multiple CMDB classes","Configuring Discovery","Managing permissions"],correct:[1],explanation:"Query Builder enables complex queries spanning multiple classes and relationships."},
+{id:54,domain:"Insight",type:"single",question:"What is the starting node in Query Builder?",options:["Last class added","First class dragged to canvas becomes the starting point","Manually configured node","CMDB hierarchy root"],correct:[1],explanation:"The first class dragged to canvas automatically becomes the starting node."},
+{id:55,domain:"Insight",type:"multi",question:"Which TWO query types are in Query Builder? (Choose two)",options:["CMDB Query","Service Mapping Query","SQL Query","GraphQL Query"],correct:[0,1],explanation:"Query Builder offers CMDB Query and Service Mapping Query types."},
+{id:56,domain:"Insight",type:"single",question:"Which property controls NLQ integration with Query Builder?",options:["glide.cmdb.query.enabled","glide.cmdb.query.nlq.activated","glide.cmdb.search.enabled","glide.cmdb.nlq.integration"],correct:[1],explanation:"glide.cmdb.query.nlq.activated controls NLQ integration (true by default)."},
+{id:57,domain:"Insight",type:"single",question:"What is a combination query?",options:["Query running multiple times","CMDB query incorporating a saved Service Mapping query","Multi-format export","Shared query"],correct:[1],explanation:"Combination query incorporates a Service Mapping query into a CMDB query."},
+{id:58,domain:"Insight",type:"single",question:"What is the Data Foundations Dashboard Playbook structure?",options:["Question, Answer, Reference, Example","Summary of indicator, Overview, Importance, Fix or Improve","Introduction, Body, Conclusion, Appendix","Define, Measure, Analyze, Improve, Control"],correct:[1],explanation:"Playbooks follow: Summary, Overview, Importance, Fix or Improve."},
+{id:59,domain:"Insight",type:"single",question:"What can saved CMDB queries populate?",options:["User groups","CMDB groups with CIs","Report templates","Discovery schedules"],correct:[1],explanation:"Saved queries can populate CMDB groups with CIs."},
+{id:60,domain:"Insight",type:"single",question:"Default batch size for Query Builder queries?",options:["50","100","200","500"],correct:[1],explanation:"Default batch size is 100."},
+{id:61,domain:"Insight",type:"single",question:"Which dashboard provides CMDB and CSDM foundational metrics?",options:["Performance Analytics Dashboard","CSDM and CMDB Data Foundations Dashboards","Discovery Dashboard","Service Portal Dashboard"],correct:[1],explanation:"CSDM and CMDB Data Foundations Dashboards provide key foundational metrics."},
+{id:62,domain:"Insight",type:"single",question:"What tabs are in CMDB Data Foundations dashboard?",options:["Discovery, Mapping, Health, Reports","Best Practices, Customizations, Data Management Practices, ITSM Processes","Classes, Relationships, Attributes, Rules","Import, Export, Transform, Validate"],correct:[1],explanation:"Tabs are: Best Practices, Customizations, Data Management Practices, ITSM Processes."},
+{id:63,domain:"Insight",type:"single",question:"What does 'CIs Processed via IRE' metric track?",options:["Deleted CIs","CIs processed through IRE","Pending CIs","CIs with errors"],correct:[1],explanation:"It tracks CIs properly processed through IRE."},
+{id:64,domain:"Insight",type:"single",question:"How does NLQ Genius Results work with CMDB?",options:["Replaces Query Builder","Finds CMDB tables using natural language without leaving portal","Auto-builds queries","Only works with Service Mapping"],correct:[1],explanation:"NLQ Genius Results finds CMDB tables using natural language queries."},
+{id:65,domain:"Insight",type:"single",question:"What reports can Query Builder create?",options:["Static PDF only","Basic or dynamic reports that continuously update","Email notifications only","CSV exports only"],correct:[1],explanation:"Query Builder can create basic or dynamic reports that continuously update."},
+{id:66,domain:"Insight",type:"single",question:"What is the Unified Map's purpose?",options:["Geographic data center locations","Visual representation of CI relationships and dependencies","User access mapping","Network topology only"],correct:[1],explanation:"Unified Map provides visual representation of CI relationships and dependencies."},
+// CSDM (9)
+{id:67,domain:"CSDM",type:"single",question:"What is CSDM's primary purpose?",options:["Replace CMDB","Standard framework for organizing service-related data","Manage authentication","Configure network"],correct:[1],explanation:"CSDM provides a standard framework for organizing service-related data."},
+{id:68,domain:"CSDM",type:"single",question:"Which CSDM layer contains Business Services?",options:["Technical Services layer","Application Services layer","Business layer","Infrastructure layer"],correct:[2],explanation:"Business Services are in the Business layer."},
+{id:69,domain:"CSDM",type:"single",question:"What is an Application Service in CSDM?",options:["Mobile app management","Logical representation of applications and supporting infrastructure","App development service","Web service API"],correct:[1],explanation:"Application Service is a logical representation of applications and their infrastructure."},
+{id:70,domain:"CSDM",type:"single",question:"What is the benefit of mapping CIs to CSDM domains?",options:["Reduced storage","Standardized data organization for better service management","Faster Discovery","Auto backup"],correct:[1],explanation:"Mapping to CSDM provides standardized organization for better service management."},
+{id:71,domain:"CSDM",type:"single",question:"Which relationship connects Application Services to Business Applications?",options:["Depends on::Used by","Consumes::Consumed By","Hosted on::Hosts","Contains::Contained by"],correct:[1],explanation:"Consumes::Consumed By connects Application Services to Business Applications."},
+{id:72,domain:"CSDM",type:"single",question:"What does CSDM Data Foundations dashboard display?",options:["Network statistics","Key CSDM metrics on a single page","Login history","License usage"],correct:[1],explanation:"It displays key CSDM metrics to assist in getting full benefit from ServiceNow."},
+{id:73,domain:"CSDM",type:"multi",question:"Which TWO stakeholder roles are important in CSDM adoption? (Choose two)",options:["Business stakeholders who define service requirements","IT stakeholders who implement technical services","External auditors only","Hardware vendors only"],correct:[0,1],explanation:"CSDM adoption requires business stakeholders and IT stakeholders collaboration."},
+{id:74,domain:"CSDM",type:"single",question:"What is a Technical Service in CSDM?",options:["Help desk service","Infrastructure/platform services supporting Application Services","Consulting service","Warranty service"],correct:[1],explanation:"Technical Services are infrastructure/platform services supporting Application Services."},
+{id:75,domain:"CSDM",type:"single",question:"What is a key benefit of CSDM?",options:["Reduced hardware costs","Common language and data structure for cross-team collaboration","Auto updates","Free licenses"],correct:[1],explanation:"CSDM provides common language enabling collaboration across teams."}
+];
+
+let currentQuestion = 0;
+let answers = {};
+let flagged = new Set();
+let timeRemaining = 90 * 60;
+let timerInterval;
+let examSubmitted = false;
+
+function init() {
+    renderQuestions();
+    renderNavGrid();
+    startTimer();
+    showQuestion(0);
+}
+
+function renderQuestions() {
+    const container = document.getElementById('questions-container');
+    questions.forEach((q, index) => {
+        const isMulti = q.type === 'multi';
+        const inputType = isMulti ? 'checkbox' : 'radio';
+        const card = document.createElement('div');
+        card.className = 'question-card';
+        card.id = `question-${index}`;
+        card.innerHTML = `
+            <div class="question-header">
+                <span class="question-number">Question ${index + 1} of 75</span>
+                <span class="domain-badge domain-${q.domain.toLowerCase()}">${q.domain}</span>
+            </div>
+            ${isMulti ? '<div class="multi-select-note">Select all that apply</div>' : ''}
+            <div class="question-text">${q.question}</div>
+            <div class="options">
+                ${q.options.map((opt, i) => `
+                    <label class="option" data-index="${i}">
+                        <input type="${inputType}" name="q${index}" value="${i}">
+                        <span class="option-label">${String.fromCharCode(65 + i)}.</span>
+                        <span>${opt}</span>
+                    </label>
+                `).join('')}
+            </div>
+            <div class="question-actions">
+                <button class="flag-btn" onclick="toggleFlag(${index})"><span>&#9873;</span> Flag</button>
+                <div class="nav-buttons">
+                    <button class="nav-button prev" onclick="prevQuestion()" ${index === 0 ? 'disabled' : ''}>Previous</button>
+                    ${index === questions.length - 1 ? '<button class="nav-button submit" onclick="showSubmitModal()">Submit</button>' : '<button class="nav-button next" onclick="nextQuestion()">Next</button>'}
+                </div>
+            </div>
+        `;
+        container.appendChild(card);
+        card.querySelectorAll('.option').forEach(opt => {
+            opt.addEventListener('click', function() {
+                const input = this.querySelector('input');
+                if (inputType === 'radio') {
+                    card.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+                    this.classList.add('selected');
+                    input.checked = true;
+                } else {
+                    input.checked = !input.checked;
+                    this.classList.toggle('selected', input.checked);
+                }
+                saveAnswer(index);
+            });
+        });
+    });
+}
+
+function renderNavGrid() {
+    const grid = document.getElementById('nav-grid');
+    for (let i = 0; i < questions.length; i++) {
+        const btn = document.createElement('button');
+        btn.className = 'nav-btn';
+        btn.textContent = i + 1;
+        btn.onclick = () => showQuestion(i);
+        grid.appendChild(btn);
+    }
+}
+
+function showQuestion(index) {
+    document.querySelectorAll('.question-card').forEach(card => card.classList.remove('active'));
+    document.getElementById(`question-${index}`).classList.add('active');
+    currentQuestion = index;
+    updateNavGrid();
+}
+
+function saveAnswer(index) {
+    const card = document.getElementById(`question-${index}`);
+    const inputs = card.querySelectorAll('input:checked');
+    if (inputs.length > 0) answers[index] = Array.from(inputs).map(i => parseInt(i.value));
+    else delete answers[index];
+    updateProgress();
+    updateNavGrid();
+}
+
+function updateNavGrid() {
+    document.querySelectorAll('.nav-btn').forEach((btn, i) => {
+        btn.classList.remove('current', 'answered', 'flagged');
+        if (i === currentQuestion) btn.classList.add('current');
+        if (answers[i]) btn.classList.add('answered');
+        if (flagged.has(i)) btn.classList.add('flagged');
+    });
+}
+
+function updateProgress() {
+    const count = Object.keys(answers).length;
+    document.getElementById('answered-count').textContent = count;
+    document.getElementById('progress-fill').style.width = `${(count / 75) * 100}%`;
+}
+
+function toggleFlag(index) {
+    const btn = document.querySelector(`#question-${index} .flag-btn`);
+    if (flagged.has(index)) { flagged.delete(index); btn.classList.remove('flagged'); }
+    else { flagged.add(index); btn.classList.add('flagged'); }
+    updateNavGrid();
+}
+
+function prevQuestion() { if (currentQuestion > 0) showQuestion(currentQuestion - 1); }
+function nextQuestion() { if (currentQuestion < questions.length - 1) showQuestion(currentQuestion + 1); }
+
+function startTimer() {
+    timerInterval = setInterval(() => {
+        if (examSubmitted) return;
+        timeRemaining--;
+        const m = Math.floor(timeRemaining / 60), s = timeRemaining % 60;
+        const d = document.getElementById('timer');
+        d.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+        if (timeRemaining <= 300) d.classList.add('timer-warning');
+        if (timeRemaining <= 0) { clearInterval(timerInterval); document.getElementById('time-up-modal').classList.add('active'); submitExam(); }
+    }, 1000);
+}
+
+function showSubmitModal() {
+    const unanswered = 75 - Object.keys(answers).length;
+    let msg = 'Are you sure you want to submit?';
+    if (unanswered > 0) msg += `<br><br><strong>${unanswered} unanswered</strong>`;
+    if (flagged.size > 0) msg += `<br><strong>${flagged.size} flagged</strong>`;
+    document.getElementById('submit-message').innerHTML = msg;
+    document.getElementById('submit-modal').classList.add('active');
+}
+
+function closeModal() { document.getElementById('submit-modal').classList.remove('active'); }
+function closeTimeModal() { document.getElementById('time-up-modal').classList.remove('active'); }
+
+function submitExam() {
+    examSubmitted = true;
+    clearInterval(timerInterval);
+    closeModal();
+    calculateResults();
+}
+
+function arraysEqual(a, b) {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+    return true;
+}
+
+function calculateResults() {
+    let correct = 0;
+    let domainScores = { Configuration: {c:0,t:0}, Ingest: {c:0,t:0}, Govern: {c:0,t:0}, Insight: {c:0,t:0}, CSDM: {c:0,t:0} };
+    questions.forEach((q, i) => {
+        domainScores[q.domain].t++;
+        const ua = (answers[i] || []).sort();
+        if (arraysEqual(ua, q.correct.sort())) { correct++; domainScores[q.domain].c++; }
+    });
+    const pct = Math.round((correct / 75) * 100);
+    const passed = pct >= 70;
+    document.querySelectorAll('.question-card').forEach(c => c.style.display = 'none');
+    document.getElementById('results-page').classList.add('active');
+    document.getElementById('score-circle').className = `score-circle ${passed ? 'score-pass' : 'score-fail'}`;
+    document.getElementById('score-percent').textContent = `${pct}%`;
+    document.getElementById('pass-fail-message').innerHTML = passed ? `<strong style="color:#00d4aa;">PASSED</strong> - ${correct}/75` : `<strong style="color:#ff6b6b;">NOT PASSED</strong> - ${correct}/75 (70% required)`;
+    const colors = { Configuration:'#1565c0', Ingest:'#e65100', Govern:'#2e7d32', Insight:'#7b1fa2', CSDM:'#c2185b' };
+    document.getElementById('domain-results').innerHTML = Object.entries(domainScores).map(([d,s]) => {
+        const p = Math.round((s.c/s.t)*100);
+        return `<div class="domain-row"><span class="domain-name">${d}</span><div class="domain-bar-container"><div class="domain-bar" style="width:${p}%;background:${colors[d]}"></div></div><span class="domain-score">${s.c}/${s.t} (${p}%)</span></div>`;
+    }).join('');
+    document.querySelector('.timer').innerHTML = '<div>Completed</div><div class="timer-display">--:--</div>';
+}
+
+function reviewAnswers() {
+    const section = document.getElementById('review-section');
+    section.style.display = 'block';
+    document.getElementById('review-content').innerHTML = questions.map((q, i) => {
+        const ua = (answers[i] || []).sort();
+        const isCorrect = arraysEqual(ua, q.correct.sort());
+        return `<div class="review-question ${isCorrect ? 'correct' : 'incorrect'}">
+            <div class="review-q-header"><strong>Q${i+1}. ${q.domain}</strong><span class="review-status ${isCorrect ? 'correct' : 'incorrect'}">${isCorrect ? 'Correct' : 'Incorrect'}</span></div>
+            <p>${q.question}</p>
+            <p><strong>Your answer:</strong> ${ua.length ? ua.map(a => String.fromCharCode(65+a)).join(', ') : 'Not answered'}</p>
+            <p><strong>Correct:</strong> ${q.correct.map(a => String.fromCharCode(65+a)).join(', ')}</p>
+            <p><em>${q.explanation}</em></p>
+        </div>`;
+    }).join('');
+    section.scrollIntoView({ behavior: 'smooth' });
+}
+
+function downloadReport() {
+    let correct = 0;
+    let ds = { Configuration:{c:0,t:0}, Ingest:{c:0,t:0}, Govern:{c:0,t:0}, Insight:{c:0,t:0}, CSDM:{c:0,t:0} };
+    questions.forEach((q,i) => { ds[q.domain].t++; const ua=(answers[i]||[]).sort(); if(arraysEqual(ua,q.correct.sort())){correct++;ds[q.domain].c++;} });
+    const pct = Math.round((correct/75)*100);
+    let r = `# CIS-DF Practice Exam Results\n\n**Date:** ${new Date().toLocaleDateString()}\n**Score:** ${correct}/75 (${pct}%)\n**Result:** ${pct>=70?'PASSED':'NOT PASSED'}\n\n## Domain Breakdown\n\n| Domain | Score | % |\n|--------|-------|---|\n`;
+    Object.entries(ds).forEach(([d,s]) => { r += `| ${d} | ${s.c}/${s.t} | ${Math.round((s.c/s.t)*100)}% |\n`; });
+    r += `\n## Question Review\n\n`;
+    questions.forEach((q,i) => {
+        const ua = (answers[i]||[]).sort();
+        const ic = arraysEqual(ua,q.correct.sort());
+        r += `### Q${i+1}. [${q.domain}] ${ic?'CORRECT':'INCORRECT'}\n${q.question}\n- Your answer: ${ua.length?ua.map(a=>String.fromCharCode(65+a)).join(', '):'Not answered'}\n- Correct: ${q.correct.map(a=>String.fromCharCode(65+a)).join(', ')}\n- *${q.explanation}*\n\n`;
+    });
+    const blob = new Blob([r], {type:'text/markdown'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `cis-df-results-${new Date().toISOString().split('T')[0]}.md`;
+    a.click();
+}
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+[
+    {
+        "domain": "Configuration",
+        "question": "What is the primary purpose of Identification rules in IRE?",
+        "options": [
+            "To determine which data source can update CI attributes",
+            "To uniquely identify CIs and prevent duplicates",
+            "To track the history of CI changes",
+            "To validate CI data against compliance policies"
+        ],
+        "correctIndex": 1,
+        "explanation": "Identification rules uniquely identify CIs based on CI attributes to prevent duplicate CIs from being created. They determine if an incoming CI matches an existing CI in the CMDB."
+    },
+    {
+        "domain": "Govern",
+        "question": "Which of the following are CMDB Health Score metrics? (This is an example - actual exam may say 'Choose two')",
+        "options": [
+            "Correctness, Completeness, Compliance",
+            "Accuracy, Availability, Accessibility",
+            "Timeliness, Trustworthiness, Traceability",
+            "Validity, Veracity, Volume"
+        ],
+        "correctIndex": 0,
+        "explanation": "The six CMDB Health Score metrics are: Correctness, Completeness, Compliance, Relationship, Staleness, and Duplicate."
+    }
+]
