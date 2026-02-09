@@ -67,7 +67,8 @@ Generate questions in these formats (matching the real exam):
 1. **Read relevant files** from `docs/servicenow/markdown/` folder based on the topic
 2. **Create scenario-based questions** that test practical application, not just memorization
 3. **Include answer explanations** with references to concepts from documentation
-4. **Weight question distribution** according to domain percentages (Govern 35% = most questions)
+4. **ALWAYS add PDF source reference** for each question - search docs to find the authoritative PDF file
+5. **Weight question distribution** according to domain percentages (Govern 35% = most questions)
 
 ## Key Concepts by Domain
 
@@ -121,7 +122,8 @@ D. [Option D]
 <details>
 <summary>Answer</summary>
 **Answer: [Letter]**
-[Explanation of why this is correct and why others are wrong indicating which PDF(Add a 'Source' line with full PDF path to each question in the existing results file) file(s) contains the response]
+[Explanation of why this is correct and why others are wrong]
+**Source (PDF):** `docs/servicenow/pdf/[filename].pdf`
 </details>
 ```
 
@@ -140,9 +142,11 @@ When user asks to practice, offer these options:
 1. Present ONE question at a time using AskUserQuestion tool
 2. User selects answer (A/B/C/D)
 3. Show result (Correct/Incorrect) with explanation
-4. Provide **Topic Deep Dive**: detailed concept explanation, how it works, exam tips
-5. Proceed to next question
-6. At end: Save results to `practice/results/{topic}-{YYYYMMDD-HHMMSS}.md`
+4. **CRITICAL**: Immediately search docs and add PDF source reference (e.g., `Source (PDF): docs/servicenow/pdf/[filename].pdf`)
+5. Update `practice/results/{topic}-{YYYYMMDD-HHMMSS}.md` with the question, answer, explanation, and PDF source
+6. Provide **Topic Deep Dive**: detailed concept explanation, how it works, exam tips
+7. Proceed to next question
+8. At end: Ensure all questions in results file have PDF sources included
 
 ### Full Practice Test (Exam Simulation Mode) - WEB APP
 - `"Full practice test"` or `"Start exam simulation"`
